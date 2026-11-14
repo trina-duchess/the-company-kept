@@ -664,7 +664,8 @@
     $('#micHint').textContent = '';
     $('#entryDlg').showModal();
     $('#entryDlg').dataset.start = JSON.stringify([$('#eBody').value, $('#eTitle').value]);
-    setTimeout(() => { const t = $('#eBody'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }, 50);
+    { const t = $('#eBody'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }  // same tap, so iPhone raises the keyboard right away
+    if (IS_IOS) $('#micHint').textContent = 'Tap the 🎤 on your keyboard (bottom right) and talk.';
   }
 
   $('#entryForm').addEventListener('submit', ev => {
