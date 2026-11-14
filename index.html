@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Company Kept">
+<meta name="theme-color" content="#5c2521">
+<title>The Company Kept</title>
+<style>
+  :root{
+    --oxblood:#5c2521;
+    --oxblood-2:#7a3129;
+    --rust:#9b4a33;
+    --suit:#9a9d95;
+    --suit-light:#c4c4b8;
+    --slate:#6f7772;
+    --canvas:#e9e3d5;
+    --canvas-2:#f3efe5;
+    --cobalt:#2a48a6;
+    --cobalt-2:#1f3784;
+    --umber:#7a4a2c;
+    --ochre:#c98d58;
+    --ink:#1d2033;
+    --line:#26305a;
+    --shadow:0 3px 0 rgba(29,32,51,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:
+      linear-gradient(90deg,var(--oxblood) 0 52%, var(--suit) 52% 100%);
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:18px 22px;margin-bottom:18px;
+    background:var(--oxblood-2);
+    border:3px solid var(--line);border-radius:6px 22px 6px 18px;
+    box-shadow:var(--shadow);color:var(--canvas-2);
+  }
+  h1{
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-weight:700;font-size:2rem;margin:0;letter-spacing:.5px;
+  }
+  h1 span{color:var(--ochre)}
+  .tag{margin:4px 0 0;font-size:.92rem;color:var(--suit-light);font-style:italic}
+  .hdr-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  button,.btn{
+    font:inherit;font-size:.92rem;cursor:pointer;
+    border:2px solid var(--line);border-radius:999px;padding:8px 15px;
+    background:var(--canvas-2);color:var(--ink);font-weight:600;
+    box-shadow:0 2px 0 var(--line);transition:transform .05s;
+  }
+  button:active{transform:translateY(2px);box-shadow:none}
+  .primary{background:var(--cobalt);color:#fff}
+  .primary:hover{background:var(--cobalt-2)}
+  .ghost{background:transparent;color:inherit;border-color:currentColor;box-shadow:none}
+  .danger{background:var(--rust);color:#fff}
+  .small{padding:4px 10px;font-size:.8rem;box-shadow:0 1px 0 var(--line)}
+  .icon{padding:5px 9px;font-size:.85rem;box-shadow:none;border-width:1.5px}
+
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:18px;align-items:start}
+  .panel{
+    background:var(--canvas);border:3px solid var(--line);
+    border-radius:4px 16px 4px 14px;box-shadow:var(--shadow);padding:16px;
+  }
+  .panel h2{
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    margin:0 0 10px;font-size:1.2rem;color:var(--oxblood);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  aside.panel{position:sticky;top:12px}
+
+  .people{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .person{
+    display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;
+    cursor:pointer;border:2px solid transparent;
+  }
+  .person:hover{background:var(--canvas-2)}
+  .person.active{background:var(--cobalt);color:#fff;border-color:var(--line)}
+  .person.active .meta{color:#dfe5ff}
+  .avatar{
+    flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;
+    font-weight:700;font-size:.85rem;color:var(--canvas-2);
+    border:2px solid var(--line);background:var(--umber);
+  }
+  .pinfo{flex:1;min-width:0}
+  .pname{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta{font-size:.78rem;color:var(--slate)}
+  .person .pactions{display:none;gap:4px}
+  .person:hover .pactions,.person.active .pactions{display:flex}
+  .person.active .icon{color:#fff;border-color:#fff;background:transparent}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .toolbar input,.toolbar select{flex:1;min-width:160px}
+  input,textarea,select{
+    font:inherit;color:var(--ink);background:var(--canvas-2);
+    border:2px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;
+  }
+  input:focus,textarea:focus,select:focus{outline:3px solid var(--ochre);outline-offset:1px}
+  textarea{min-height:190px;resize:vertical;line-height:1.5}
+
+  .filter-note{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;
+    background:var(--cobalt);color:#fff;border:2px solid var(--line);
+    border-radius:10px;padding:8px 12px;margin-bottom:14px;font-weight:600;
+  }
+  .filter-note .btns{display:flex;gap:6px}
+  .filter-note button{background:#fff}
+
+  .entries{display:flex;flex-direction:column;gap:14px}
+  .entry{
+    background:var(--canvas-2);border:2px solid var(--line);
+    border-left:10px solid var(--oxblood);border-radius:6px 14px 6px 12px;
+    padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .entry-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .edate{
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    color:var(--oxblood);font-weight:700;font-size:.95rem;
+  }
+  .etitle{font-size:1.15rem;font-weight:700;margin:2px 0 6px}
+  .ebody{white-space:pre-wrap;line-height:1.55}
+  .ebody.clamp{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .more{background:none;border:none;box-shadow:none;color:var(--cobalt);padding:4px 0;font-size:.85rem}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{
+    font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:999px;
+    background:var(--suit-light);border:1.5px solid var(--line);
+  }
+  .chip.me{background:var(--ochre)}
+  .logged{font-size:.75rem;color:var(--slate);margin-top:8px}
+  .eactions{display:flex;gap:6px;flex-shrink:0}
+  .empty{
+    text-align:center;padding:40px 20px;color:var(--slate);
+    border:2px dashed var(--slate);border-radius:14px;
+  }
+  .year-head{
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-size:1.4rem;color:var(--oxblood);margin:8px 0 -4px;
+    border-bottom:2px solid var(--line);padding-bottom:2px;
+  }
+
+  dialog{
+    border:3px solid var(--line);border-radius:6px 20px 6px 18px;padding:0;
+    background:var(--canvas);color:var(--ink);width:min(680px,94vw);
+    box-shadow:0 10px 40px rgba(0,0,0,.4);
+  }
+  dialog::backdrop{background:rgba(40,16,14,.6)}
+  .dlg-head{
+    background:var(--oxblood-2);color:var(--canvas-2);padding:14px 18px;
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-size:1.25rem;font-weight:700;display:flex;justify-content:space-between;align-items:center;
+  }
+  .dlg-head button{background:transparent;color:var(--canvas-2);border-color:var(--canvas-2);box-shadow:none}
+  .dlg-body{padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-height:72vh;overflow:auto}
+  .dlg-foot{padding:12px 18px;display:flex;justify-content:flex-end;gap:8px;border-top:2px solid var(--line);background:var(--canvas-2);flex-wrap:wrap}
+  label{font-weight:650;font-size:.88rem;display:flex;flex-direction:column;gap:5px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-weight:400;color:var(--slate);font-size:.78rem}
+  .pick{display:flex;flex-wrap:wrap;gap:6px}
+  .pick label{
+    flex-direction:row;align-items:center;gap:6px;font-weight:600;font-size:.85rem;
+    padding:5px 11px;border:1.5px solid var(--line);border-radius:999px;background:var(--canvas-2);cursor:pointer;
+  }
+  .pick input{width:auto;margin:0;accent-color:var(--cobalt)}
+  .pick label:has(input:checked){background:var(--cobalt);color:#fff}
+  .body-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .mic{display:inline-flex;align-items:center;gap:6px}
+  .mic.on{background:var(--rust);color:#fff;animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(155,74,51,.25)}}
+  .dot{width:9px;height:9px;border-radius:50%;background:currentColor;display:inline-block}
+  .stamp{font-size:.8rem;color:var(--slate)}
+  pre.preview{
+    white-space:pre-wrap;background:var(--canvas-2);border:2px solid var(--line);
+    border-radius:10px;padding:14px;margin:0;font-family:Georgia,serif;line-height:1.5;font-size:.92rem;
+  }
+  .toast{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+    background:var(--ink);color:var(--canvas-2);padding:10px 18px;border-radius:999px;
+    font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50;
+  }
+  .toast.show{opacity:1}
+
+  @media (max-width:820px){
+    body{background:linear-gradient(180deg,var(--oxblood) 0 340px, var(--suit) 340px)}
+    .layout{grid-template-columns:1fr}
+    aside.panel{position:static}
+    .people{flex-direction:row;overflow-x:auto;padding-bottom:4px}
+    .person{flex:0 0 auto;border:2px solid var(--line);background:var(--canvas-2)}
+    .person .pactions{display:none!important}
+    .person .meta{display:none}
+    .row{grid-template-columns:1fr}
+    h1{font-size:1.6rem}
+  }
+
+  @media print{
+    body{background:#fff}
+    body > *:not(#exportDlg){display:none!important}
+    #exportDlg{position:static;border:none;box-shadow:none;width:100%;max-height:none}
+    #exportDlg .dlg-head,#exportDlg .dlg-foot,#exportDlg .exp-opts{display:none}
+    #exportDlg .dlg-body{max-height:none;overflow:visible}
+    pre.preview{border:none;background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>The Company <span>Kept</span></h1>
+      <p class="tag">Moments lived, and the people who were there.</p>
+    </div>
+    <div class="hdr-actions">
+      <button class="primary" id="newEntryBtn">+ New entry</button>
+      <button class="ghost" id="backupBtn" title="Download a full backup">Backup</button>
+      <button class="ghost" id="restoreBtn" title="Restore from a backup file">Restore</button>
+      <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <h2>People <button class="small primary" id="addPersonBtn">+ Add</button></h2>
+      <ul class="people" id="peopleList"></ul>
+    </aside>
+
+    <main class="panel">
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search entries…">
+        <select id="sort" style="flex:0 0 auto;width:auto">
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+      </div>
+      <div id="filterNote"></div>
+      <div class="entries" id="entries"></div>
+    </main>
+  </div>
+</div>
+
+<!-- Entry dialog -->
+<dialog id="entryDlg">
+  <form method="dialog" id="entryForm">
+    <div class="dlg-head"><span id="entryDlgTitle">New entry</span><button type="button" class="icon" data-close>✕</button></div>
+    <div class="dlg-body">
+      <div class="row">
+        <label>When it happened
+          <input type="date" id="eDate" required>
+          <span class="hint">You can change this any time.</span>
+        </label>
+        <label>Title <span class="hint" style="display:inline">(optional)</span>
+          <input type="text" id="eTitle" placeholder="e.g. Coffee on the coast">
+        </label>
+      </div>
+      <label>Who was there
+        <div class="pick" id="ePeople"></div>
+        <span class="hint">Leave all unchecked for a moment that's just yours.</span>
+      </label>
+      <label>
+        <div class="body-head">
+          <span>What happened</span>
+          <button type="button" class="small mic" id="micBtn"><span class="dot"></span><span id="micLabel">Dictate</span></button>
+        </div>
+        <textarea id="eBody" placeholder="Type or tap Dictate and talk…"></textarea>
+        <span class="hint" id="micHint"></span>
+      </label>
+      <div class="stamp" id="eStamp"></div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="danger" id="eDelete" style="margin-right:auto">Delete</button>
+      <button type="button" data-close>Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Person dialog -->
+<dialog id="personDlg">
+  <form method="dialog" id="personForm">
+    <div class="dlg-head"><span id="personDlgTitle">Add person</span><button type="button" class="icon" data-close>✕</button></div>
+    <div class="dlg-body">
+      <label>Name <input type="text" id="pName" required></label>
+      <label>Relationship <input type="text" id="pRel" placeholder="Friend, sister, coworker…"></label>
+      <label>Notes <textarea id="pNotes" style="min-height:90px" placeholder="Anything worth remembering about them"></textarea></label>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="danger" id="pDelete" style="margin-right:auto">Delete</button>
+      <button type="button" data-close>Cancel</button>
+      <button type="submit" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Export dialog -->
+<dialog id="exportDlg">
+  <div class="dlg-head"><span id="exportTitle">Export</span><button type="button" class="icon" data-close>✕</button></div>
+  <div class="dlg-body">
+    <div class="exp-opts row">
+      <label>Order
+        <select id="expOrder"><option value="asc">Oldest first</option><option value="desc">Newest first</option></select>
+      </label>
+      <label>Include
+        <select id="expLogged"><option value="no">Experience dates only</option><option value="yes">Also show when logged</option></select>
+      </label>
+    </div>
+    <pre class="preview" id="expPreview"></pre>
+  </div>
+  <div class="dlg-foot">
+    <button type="button" data-close>Close</button>
+    <button type="button" id="expCopy">Copy</button>
+    <button type="button" id="expPrint">Print / PDF</button>
+    <button type="button" class="primary" id="expDownload">Download .txt</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const KEY = 'companyKept.v1';
+  const $ = s => document.querySelector(s);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+
+  // ---------- storage ----------
+  let db = load();
+  function load() {
+    try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return { version: 1, people: [], entries: [] };
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(db)); }
+    catch (e) { toast('Could not save — storage unavailable'); }
+  }
+
+  // ---------- state ----------
+  let filterPerson = null;   // null = all, 'me' = just me, else id
+  let editingEntry = null;
+  let editingPerson = null;
+  const expanded = new Set();
+
+  // ---------- helpers ----------
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const personById = id => db.people.find(p => p.id === id);
+  const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const avatarColors = ['#7a4a2c','#2a48a6','#9b4a33','#6f7772','#5c2521','#a8743f','#3d4f7a'];
+  const colorFor = id => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return avatarColors[h % avatarColors.length]; };
+  const fmtDate = iso => { if (!iso) return ''; const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d).toLocaleDateString(undefined, { weekday:'short', year:'numeric', month:'long', day:'numeric' }); };
+  const fmtStamp = iso => new Date(iso).toLocaleString(undefined, { year:'numeric', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  const countFor = id => db.entries.filter(e => id === 'me' ? !e.people.length : e.people.includes(id)).length;
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2000); }
+
+  // ---------- render ----------
+  function renderPeople() {
+    const people = [...db.people].sort((a, b) => a.name.localeCompare(b.name));
+    const items = [
+      `<li class="person ${filterPerson === null ? 'active' : ''}" data-filter="">
+         <div class="avatar" style="background:var(--slate)">All</div>
+         <div class="pinfo"><div class="pname">Everything</div><div class="meta">${db.entries.length} entries</div></div></li>`,
+      `<li class="person ${filterPerson === 'me' ? 'active' : ''}" data-filter="me">
+         <div class="avatar" style="background:var(--ochre);color:var(--ink)">Me</div>
+         <div class="pinfo"><div class="pname">Just me</div><div class="meta">${countFor('me')} entries</div></div></li>`,
+      ...people.map(p => `
+        <li class="person ${filterPerson === p.id ? 'active' : ''}" data-filter="${p.id}">
+          <div class="avatar" style="background:${colorFor(p.id)}">${esc(initials(p.name))}</div>
+          <div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="meta">${esc(p.relation || '')}${p.relation ? ' · ' : ''}${countFor(p.id)}</div></div>
+          <div class="pactions">
+            <button class="icon" data-export="${p.id}" title="Export ${esc(p.name)}'s log">⇩</button>
+            <button class="icon" data-editp="${p.id}" title="Edit">✎</button>
+          </div>
+        </li>`)
+    ];
+    $('#peopleList').innerHTML = items.join('');
+  }
+
+  function visibleEntries() {
+    const q = $('#search').value.trim().toLowerCase();
+    const dir = $('#sort').value;
+    return db.entries
+      .filter(e => filterPerson === null ? true : filterPerson === 'me' ? !e.people.length : e.people.includes(filterPerson))
+      .filter(e => {
+        if (!q) return true;
+        const names = e.people.map(id => personById(id)?.name || '').join(' ');
+        return (e.title + ' ' + e.body + ' ' + names).toLowerCase().includes(q);
+      })
+      .sort((a, b) => {
+        const c = a.date.localeCompare(b.date) || a.loggedAt.localeCompare(b.loggedAt);
+        return dir === 'asc' ? c : -c;
+      });
+  }
+
+  function renderEntries() {
+    // filter banner
+    const fn = $('#filterNote');
+    if (filterPerson && filterPerson !== 'me') {
+      const p = personById(filterPerson);
+      fn.innerHTML = `<div class="filter-note"><span>Showing moments with ${esc(p.name)}</span>
+        <span class="btns"><button class="small" data-export="${p.id}">Export log</button><button class="small" data-clear>Show all</button></span></div>`;
+    } else if (filterPerson === 'me') {
+      fn.innerHTML = `<div class="filter-note"><span>Showing moments that were just yours</span>
+        <span class="btns"><button class="small" data-export="me">Export</button><button class="small" data-clear>Show all</button></span></div>`;
+    } else fn.innerHTML = '';
+
+    const list = visibleEntries();
+    if (!list.length) {
+      $('#entries').innerHTML = db.entries.length
+        ? `<div class="empty">No entries match.</div>`
+        : `<div class="empty"><p style="font-size:1.1rem;margin-top:0"><strong>Nothing logged yet.</strong></p>
+           <p>Add the people in your life on the left, then tap <strong>+ New entry</strong> to record your first moment.</p></div>`;
+      return;
+    }
+    let lastYear = null, html = '';
+    for (const e of list) {
+      const yr = e.date.slice(0, 4);
+      if (yr !== lastYear) { html += `<div class="year-head">${yr}</div>`; lastYear = yr; }
+      const long = e.body.length > 420 || e.body.split('\n').length > 5;
+      const open = expanded.has(e.id);
+      const chips = e.people.length
+        ? e.people.map(id => personById(id)).filter(Boolean).map(p => `<span class="chip">${esc(p.name)}</span>`).join('')
+        : `<span class="chip me">Just me</span>`;
+      const edited = e.updatedAt && e.updatedAt !== e.loggedAt ? ` · edited ${fmtStamp(e.updatedAt)}` : '';
+      html += `<article class="entry">
+        <div class="entry-top">
+          <div><div class="edate">${fmtDate(e.date)}</div>${e.title ? `<div class="etitle">${esc(e.title)}</div>` : '<div style="height:6px"></div>'}</div>
+          <div class="eactions"><button class="icon" data-edit="${e.id}" title="Edit">✎ Edit</button></div>
+        </div>
+        <div class="ebody ${long && !open ? 'clamp' : ''}">${esc(e.body)}</div>
+        ${long ? `<button class="more" data-toggle="${e.id}">${open ? 'Show less' : 'Read more'}</button>` : ''}
+        <div class="chips">${chips}</div>
+        <div class="logged">Logged ${fmtStamp(e.loggedAt)}${edited}</div>
+      </article>`;
+    }
+    $('#entries').innerHTML = html;
+  }
+
+  function render() { renderPeople(); renderEntries(); }
+
+  // ---------- entry dialog ----------
+  function openEntry(id) {
+    stopDictation();
+    editingEntry = id ? db.entries.find(e => e.id === id) : null;
+    $('#entryDlgTitle').textContent = editingEntry ? 'Edit entry' : 'New entry';
+    $('#eDate').value = editingEntry ? editingEntry.date : todayISO();
+    $('#eTitle').value = editingEntry ? editingEntry.title : '';
+    $('#eBody').value = editingEntry ? editingEntry.body : '';
+    const sel = editingEntry ? editingEntry.people : (filterPerson && filterPerson !== 'me' ? [filterPerson] : []);
+    const people = [...db.people].sort((a, b) => a.name.localeCompare(b.name));
+    $('#ePeople').innerHTML = people.length
+      ? people.map(p => `<label><input type="checkbox" value="${p.id}" ${sel.includes(p.id) ? 'checked' : ''}>${esc(p.name)}</label>`).join('')
+      : `<span class="hint">No people yet — add them from the People panel.</span>`;
+    $('#eDelete').style.display = editingEntry ? '' : 'none';
+    $('#eStamp').textContent = editingEntry
+      ? `Logged ${fmtStamp(editingEntry.loggedAt)}${editingEntry.updatedAt !== editingEntry.loggedAt ? ' · last edited ' + fmtStamp(editingEntry.updatedAt) : ''}`
+      : `Log date will be recorded as now (${fmtStamp(new Date().toISOString())}).`;
+    $('#micHint').textContent = '';
+    $('#entryDlg').showModal();
+    if (!editingEntry) setTimeout(() => $('#eBody').focus(), 50);
+  }
+
+  $('#entryForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    stopDictation();
+    const body = $('#eBody').value.trim();
+    const title = $('#eTitle').value.trim();
+    if (!body && !title) { toast('Write or dictate something first'); return; }
+    const people = [...$('#ePeople').querySelectorAll('input:checked')].map(i => i.value);
+    const now = new Date().toISOString();
+    if (editingEntry) {
+      Object.assign(editingEntry, { date: $('#eDate').value || editingEntry.date, title, body, people, updatedAt: now });
+    } else {
+      db.entries.push({ id: uid(), date: $('#eDate').value || todayISO(), title, body, people, loggedAt: now, updatedAt: now });
+    }
+    save(); $('#entryDlg').close(); render(); toast('Saved');
+  });
+
+  $('#eDelete').addEventListener('click', () => {
+    if (!editingEntry) return;
+    if (!confirm('Delete this entry? This cannot be undone.')) return;
+    db.entries = db.entries.filter(e => e.id !== editingEntry.id);
+    stopDictation(); save(); $('#entryDlg').close(); render(); toast('Entry deleted');
+  });
+
+  // ---------- dictation ----------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, listening = false;
+  function setMic(on) {
+    listening = on;
+    $('#micBtn').classList.toggle('on', on);
+    $('#micLabel').textContent = on ? 'Stop' : 'Dictate';
+  }
+  function startDictation() {
+    if (!SR) {
+      $('#micHint').textContent = "This browser doesn't support built-in dictation. Tip: tap the microphone on your phone's keyboard instead.";
+      return;
+    }
+    const ta = $('#eBody');
+    const base = ta.value && !/\s$/.test(ta.value) ? ta.value + ' ' : ta.value;
+    let finalText = '';
+    rec = new SR();
+    rec.lang = navigator.language || 'en-US';
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t; else interim += t;
+      }
+      ta.value = base + tidy(finalText + interim);
+      ta.scrollTop = ta.scrollHeight;
+    };
+    rec.onerror = e => {
+      const msg = { 'not-allowed': 'Microphone permission was blocked. Allow it in your browser settings.', 'no-speech': 'Didn\'t hear anything — try again.' }[e.error] || 'Dictation stopped (' + e.error + ').';
+      $('#micHint').textContent = msg;
+    };
+    rec.onend = () => { ta.value = base + tidy(finalText); setMic(false); rec = null; };
+    try { rec.start(); setMic(true); $('#micHint').textContent = 'Listening… say "new paragraph" to start a new paragraph.'; }
+    catch (e) { $('#micHint').textContent = 'Could not start dictation.'; }
+  }
+  function tidy(t) {
+    t = t.replace(/\s*\bnew paragraph\b\s*/gi, '\n\n').replace(/\s*\bnew line\b\s*/gi, '\n');
+    // Capitalize first letter of sentences
+    return t.replace(/(^|[.!?]\s+|\n)([a-z])/g, (m, a, b) => a + b.toUpperCase());
+  }
+  function stopDictation() { if (rec) { try { rec.stop(); } catch (e) {} } setMic(false); }
+  $('#micBtn').addEventListener('click', () => listening ? stopDictation() : startDictation());
+
+  // ---------- person dialog ----------
+  function openPerson(id) {
+    editingPerson = id ? personById(id) : null;
+    $('#personDlgTitle').textContent = editingPerson ? 'Edit person' : 'Add person';
+    $('#pName').value = editingPerson?.name || '';
+    $('#pRel').value = editingPerson?.relation || '';
+    $('#pNotes').value = editingPerson?.notes || '';
+    $('#pDelete').style.display = editingPerson ? '' : 'none';
+    $('#personDlg').showModal();
+    setTimeout(() => $('#pName').focus(), 50);
+  }
+  $('#personForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const name = $('#pName').value.trim();
+    if (!name) return;
+    const data = { name, relation: $('#pRel').value.trim(), notes: $('#pNotes').value.trim() };
+    if (editingPerson) Object.assign(editingPerson, data);
+    else db.people.push({ id: uid(), createdAt: new Date().toISOString(), ...data });
+    save(); $('#personDlg').close(); render(); toast(editingPerson ? 'Updated' : 'Added ' + name);
+  });
+  $('#pDelete').addEventListener('click', () => {
+    if (!editingPerson) return;
+    const n = countFor(editingPerson.id);
+    const msg = `Delete ${editingPerson.name}?` + (n ? `\n\nTheir name will be removed from ${n} entr${n === 1 ? 'y' : 'ies'}. The entries themselves stay.` : '');
+    if (!confirm(msg)) return;
+    const id = editingPerson.id;
+    db.people = db.people.filter(p => p.id !== id);
+    db.entries.forEach(e => e.people = e.people.filter(x => x !== id));
+    if (filterPerson === id) filterPerson = null;
+    save(); $('#personDlg').close(); render(); toast('Person deleted');
+  });
+
+  // ---------- export ----------
+  let exportTarget = null;
+  function buildExport() {
+    const id = exportTarget;
+    const name = id === 'me' ? 'Just me' : personById(id).name;
+    const p = id === 'me' ? null : personById(id);
+    const order = $('#expOrder').value;
+    const showLogged = $('#expLogged').value === 'yes';
+    const list = db.entries
+      .filter(e => id === 'me' ? !e.people.length : e.people.includes(id))
+      .sort((a, b) => (a.date.localeCompare(b.date) || a.loggedAt.localeCompare(b.loggedAt)) * (order === 'asc' ? 1 : -1));
+    const lines = [];
+    lines.push(id === 'me' ? 'THE COMPANY KEPT — Moments of my own' : `THE COMPANY KEPT — Moments with ${name}`);
+    if (p?.relation) lines.push(p.relation);
+    lines.push(`${list.length} entr${list.length === 1 ? 'y' : 'ies'} · exported ${new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' })}`);
+    if (p?.notes) lines.push('', p.notes);
+    lines.push('', '────────────────────────────────────────');
+    for (const e of list) {
+      lines.push('', fmtDate(e.date) + (e.title ? ' — ' + e.title : ''));
+      const others = e.people.filter(x => x !== id).map(x => personById(x)?.name).filter(Boolean);
+      if (others.length) lines.push('Also there: ' + others.join(', '));
+      if (showLogged) lines.push('Logged ' + fmtStamp(e.loggedAt));
+      lines.push('', e.body, '', '────────────────────────────────────────');
+    }
+    return { text: lines.join('\n'), name };
+  }
+  function openExport(id) {
+    exportTarget = id;
+    const { text, name } = buildExport();
+    $('#exportTitle').textContent = 'Export — ' + name;
+    $('#expPreview').textContent = text;
+    $('#exportDlg').showModal();
+  }
+  ['#expOrder', '#expLogged'].forEach(s => $(s).addEventListener('change', () => { $('#expPreview').textContent = buildExport().text; }));
+  $('#expDownload').addEventListener('click', () => {
+    const { text, name } = buildExport();
+    download(`${name.replace(/[^\w\- ]+/g, '').replace(/\s+/g, '-')}-log-${todayISO()}.txt`, text, 'text/plain');
+  });
+  $('#expCopy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(buildExport().text); toast('Copied'); }
+    catch (e) { toast('Copy not available here'); }
+  });
+  $('#expPrint').addEventListener('click', () => window.print());
+
+  function download(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ---------- backup / restore ----------
+  $('#backupBtn').addEventListener('click', () => download(`company-kept-backup-${todayISO()}.json`, JSON.stringify(db, null, 2), 'application/json'));
+  $('#restoreBtn').addEventListener('click', () => $('#restoreFile').click());
+  $('#restoreFile').addEventListener('change', async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data.people) || !Array.isArray(data.entries)) throw 0;
+      if (!confirm(`Replace current data with this backup?\n\n${data.people.length} people, ${data.entries.length} entries.`)) return;
+      db = data; filterPerson = null; save(); render(); toast('Restored');
+    } catch (e) { toast('That file is not a valid backup'); }
+    ev.target.value = '';
+  });
+
+  // ---------- events ----------
+  $('#newEntryBtn').addEventListener('click', () => openEntry());
+  $('#addPersonBtn').addEventListener('click', () => openPerson());
+  $('#search').addEventListener('input', renderEntries);
+  $('#sort').addEventListener('change', renderEntries);
+
+  document.addEventListener('click', ev => {
+    const t = ev.target.closest('[data-export],[data-editp],[data-edit],[data-toggle],[data-clear],[data-close],[data-filter]');
+    if (!t) return;
+    if (t.dataset.export) { ev.stopPropagation(); openExport(t.dataset.export); return; }
+    if (t.dataset.editp) { ev.stopPropagation(); openPerson(t.dataset.editp); return; }
+    if (t.dataset.edit) return openEntry(t.dataset.edit);
+    if (t.dataset.toggle) { const id = t.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); return renderEntries(); }
+    if ('clear' in t.dataset) { filterPerson = null; return render(); }
+    if ('close' in t.dataset) { stopDictation(); t.closest('dialog').close(); return; }
+    if ('filter' in t.dataset) { filterPerson = t.dataset.filter || null; return render(); }
+  });
+  $('#entryDlg').addEventListener('close', stopDictation);
+
+  render();
+})();
+</script>
+</body>
+</html>
