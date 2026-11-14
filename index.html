@@ -96,14 +96,17 @@
   .pinfo{flex:1;min-width:0}
   .pname{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .meta{font-size:.78rem;color:var(--slate)}
-  .person .pactions{display:none;gap:4px}
+  .person .pactions{display:flex;gap:6px;flex-shrink:0}
+  .people .person{border:2px solid var(--line);background:var(--canvas-2);padding:10px 12px}
+  .people .person:hover{background:#fff}
+  .people .meta{font-size:.82rem}
   .psection{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--oxblood);margin:10px 4px 0;border-bottom:1.5px solid var(--line);padding-bottom:2px}
   .star{color:var(--ochre)}
   .person.active .star{color:#ffd9a8}
   label.check{flex-direction:row;align-items:center;gap:8px}
   label.check input{width:auto;margin:0;accent-color:var(--cobalt)}
   .pick-break{flex-basis:100%;height:0;border-top:1.5px dashed var(--slate);margin:2px 0}
-  .person:hover .pactions,.person.active .pactions{display:flex}
+
   .person.active .icon{color:#fff;border-color:#fff;background:transparent}
 
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
@@ -229,13 +232,9 @@
 
   @media (max-width:820px){
     body{background:linear-gradient(180deg,var(--oxblood) 0 340px, var(--suit) 340px)}
-    .layout{grid-template-columns:1fr}
-    aside.panel{position:static}
-    .people{flex-direction:row;overflow-x:auto;padding-bottom:4px}
-    .person{flex:0 0 auto;border:2px solid var(--line);background:var(--canvas-2)}
-    .person .pactions{display:none!important}
-    .person .meta{display:none}
-    .psection{display:none}
+    .tab .long{display:none}
+    .people .icon{padding:7px 10px;font-size:.95rem}
+    .toolbar select{flex:1 1 100%!important}
     .row{grid-template-columns:1fr}
     h1{font-size:1.6rem}
     .compose{flex-direction:column}
@@ -270,8 +269,9 @@
   </header>
 
   <nav class="tabs" role="tablist">
-    <button class="tab active" data-view="log" role="tab">✎ Log a moment</button>
-    <button class="tab" data-view="browse" role="tab">📖 Browse &amp; export</button>
+    <button class="tab active" data-view="log" role="tab">✎ Log<span class="long"> a moment</span></button>
+    <button class="tab" data-view="people" role="tab">👥 People</button>
+    <button class="tab" data-view="browse" role="tab">📖 Browse<span class="long"> &amp; export</span></button>
   </nav>
 
   <section id="logView" class="panel logpanel">
@@ -282,14 +282,15 @@
     <div id="lRecent"></div>
   </section>
 
-  <div class="layout" id="browseView" hidden>
-    <aside class="panel">
-      <h2>People <button class="small primary" id="addPersonBtn">+ Add</button></h2>
-      <ul class="people" id="peopleList"></ul>
-    </aside>
+  <section class="panel" id="peopleView" hidden>
+    <h2>People <button class="small primary" id="addPersonBtn">+ Add person</button></h2>
+    <ul class="people" id="peopleList"></ul>
+  </section>
 
+  <div id="browseView" hidden>
     <main class="panel">
       <div class="toolbar">
+        <select id="personFilter" style="flex:0 1 220px"></select>
         <input type="search" id="search" placeholder="Search entries…">
         <select id="sort" style="flex:0 0 auto;width:auto">
           <option value="desc">Newest first</option>
@@ -526,30 +527,26 @@
   // ---------- render ----------
   function renderPeople() {
     const people = sortedPeople();
-    const items = [
-      `<li class="person ${filterPerson === null ? 'active' : ''}" data-filter="">
-         <div class="avatar" style="background:var(--slate)">All</div>
-         <div class="pinfo"><div class="pname">Everything</div><div class="meta">${db.entries.length} entries</div></div></li>`,
-      `<li class="person ${filterPerson === 'me' ? 'active' : ''}" data-filter="me">
-         <div class="avatar" style="background:var(--ochre);color:var(--ink)">Me</div>
-         <div class="pinfo"><div class="pname">Just me</div><div class="meta">${countFor('me')} entries</div></div></li>`,
-      ...people.flatMap((p, i) => {
-        const hasFreq = people.some(x => x.frequent);
-        const label = !hasFreq ? '' : i === 0 ? '<li class="psection">★ Frequent</li>'
-          : (!p.frequent && people[i - 1].frequent) ? '<li class="psection">Everyone else</li>' : '';
-        return [label + `
-        <li class="person ${filterPerson === p.id ? 'active' : ''}" data-filter="${p.id}">
+    const hasFreq = people.some(x => x.frequent);
+    $('#peopleList').innerHTML = people.length ? people.map((p, i) => {
+      const label = !hasFreq ? '' : i === 0 ? '<li class="psection">★ Frequent</li>'
+        : (!p.frequent && people[i - 1].frequent) ? '<li class="psection">Everyone else</li>' : '';
+      const n = countFor(p.id);
+      return label + `
+        <li class="person" data-filter="${p.id}" title="See moments with ${esc(p.name)}">
           <div class="avatar" style="background:${colorFor(p.id)}">${esc(initials(p.name))}</div>
-          <div class="pinfo"><div class="pname">${p.frequent ? '<span class="star">★</span> ' : ''}${esc(p.name)}</div><div class="meta">${esc(p.relation || '')}${p.relation ? ' · ' : ''}${countFor(p.id)}</div></div>
+          <div class="pinfo"><div class="pname">${p.frequent ? '<span class="star">★</span> ' : ''}${esc(p.name)}</div>
+            <div class="meta">${esc(p.relation || '')}${p.relation ? ' · ' : ''}${n} moment${n === 1 ? '' : 's'}</div></div>
           <div class="pactions">
             <button class="icon" data-freq="${p.id}" title="${p.frequent ? 'Remove from Frequent' : 'Mark as Frequent'}">${p.frequent ? '★' : '☆'}</button>
-            <button class="icon" data-export="${p.id}" title="Export ${esc(p.name)}'s log">⇩</button>
             <button class="icon" data-editp="${p.id}" title="Edit">✎</button>
+            <button class="icon" data-export="${p.id}" title="Export ${esc(p.name)}'s log">⇩</button>
           </div>
-        </li>`];
-      })
-    ];
-    $('#peopleList').innerHTML = items.join('');
+        </li>`;
+    }).join('') : '<li class="empty">No people yet — tap <strong>+ Add person</strong>.</li>';
+    const opt = (v, t) => `<option value="${v}" ${String(filterPerson ?? '') === v ? 'selected' : ''}>${t}</option>`;
+    $('#personFilter').innerHTML = opt('', `Everyone (${db.entries.length})`) + opt('me', `Just me (${countFor('me')})`) +
+      people.map(p => opt(p.id, `${p.frequent ? '★ ' : ''}${esc(p.name)} (${countFor(p.id)})`)).join('');
   }
 
   function visibleEntries() {
@@ -585,7 +582,7 @@
       $('#entries').innerHTML = db.entries.length
         ? `<div class="empty">No entries match.</div>`
         : `<div class="empty"><p style="font-size:1.1rem;margin-top:0"><strong>Nothing logged yet.</strong></p>
-           <p>Add the people in your life on the left, then use the <strong>Log a moment</strong> tab to record your first one.</p></div>`;
+           <p>Add the people in your life on the People tab, then use the <strong>Log a moment</strong> tab to record your first one.</p></div>`;
       return;
     }
     let lastYear = null, html = '';
@@ -637,6 +634,8 @@
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
     $('#logView').hidden = v !== 'log';
     $('#browseView').hidden = v !== 'browse';
+    $('#peopleView').hidden = v !== 'people';
+    window.scrollTo(0, 0);
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
 
@@ -872,6 +871,7 @@
   // ---------- events ----------
   $('#addPersonBtn').addEventListener('click', () => openPerson());
   $('#search').addEventListener('input', renderEntries);
+  $('#personFilter').addEventListener('change', e => { filterPerson = e.target.value || null; render(); });
   $('#sort').addEventListener('change', renderEntries);
 
   document.addEventListener('click', ev => {
@@ -886,7 +886,7 @@
     if (t.dataset.toggle) { const id = t.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); return renderEntries(); }
     if ('clear' in t.dataset) { filterPerson = null; return render(); }
     if ('close' in t.dataset) { if (t.closest('#entryDlg') && entryDirty() && !confirm('Discard this moment?')) return; stopDictation(); t.closest('dialog').close(); return; }
-    if ('filter' in t.dataset) { filterPerson = t.dataset.filter || null; return render(); }
+    if ('filter' in t.dataset) { filterPerson = t.dataset.filter || null; render(); return showView('browse'); }
   });
   $('#entryDlg').addEventListener('close', stopDictation);
   const entryDirty = () => JSON.stringify([$('#eBody').value, $('#eTitle').value]) !== $('#entryDlg').dataset.start;
