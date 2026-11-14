@@ -93,6 +93,12 @@
   .pname{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .meta{font-size:.78rem;color:var(--slate)}
   .person .pactions{display:none;gap:4px}
+  .psection{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--oxblood);margin:10px 4px 0;border-bottom:1.5px solid var(--line);padding-bottom:2px}
+  .star{color:var(--ochre)}
+  .person.active .star{color:#ffd9a8}
+  label.check{flex-direction:row;align-items:center;gap:8px}
+  label.check input{width:auto;margin:0;accent-color:var(--cobalt)}
+  .pick-break{flex-basis:100%;height:0;border-top:1.5px dashed var(--slate);margin:2px 0}
   .person:hover .pactions,.person.active .pactions{display:flex}
   .person.active .icon{color:#fff;border-color:#fff;background:transparent}
 
@@ -195,6 +201,7 @@
     .person{flex:0 0 auto;border:2px solid var(--line);background:var(--canvas-2)}
     .person .pactions{display:none!important}
     .person .meta{display:none}
+    .psection{display:none}
     .row{grid-template-columns:1fr}
     h1{font-size:1.6rem}
   }
@@ -287,6 +294,7 @@
     <div class="dlg-body">
       <label>Name <input type="text" id="pName" required></label>
       <label>Relationship <input type="text" id="pRel" placeholder="Friend, sister, coworker…"></label>
+      <label class="check"><input type="checkbox" id="pFreq"> ★ Frequent <span class="hint">— someone you see regularly; listed first</span></label>
       <label>Notes <textarea id="pNotes" style="min-height:90px" placeholder="Anything worth remembering about them"></textarea></label>
     </div>
     <div class="dlg-foot">
@@ -348,6 +356,7 @@
   // ---------- helpers ----------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const personById = id => db.people.find(p => p.id === id);
+  const sortedPeople = () => [...db.people].sort((a, b) => (!!b.frequent - !!a.frequent) || a.name.localeCompare(b.name));
   const initials = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const avatarColors = ['#7a4a2c','#2a48a6','#9b4a33','#6f7772','#5c2521','#a8743f','#3d4f7a'];
   const colorFor = id => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return avatarColors[h % avatarColors.length]; };
@@ -358,7 +367,7 @@
 
   // ---------- render ----------
   function renderPeople() {
-    const people = [...db.people].sort((a, b) => a.name.localeCompare(b.name));
+    const people = sortedPeople();
     const items = [
       `<li class="person ${filterPerson === null ? 'active' : ''}" data-filter="">
          <div class="avatar" style="background:var(--slate)">All</div>
@@ -366,15 +375,21 @@
       `<li class="person ${filterPerson === 'me' ? 'active' : ''}" data-filter="me">
          <div class="avatar" style="background:var(--ochre);color:var(--ink)">Me</div>
          <div class="pinfo"><div class="pname">Just me</div><div class="meta">${countFor('me')} entries</div></div></li>`,
-      ...people.map(p => `
+      ...people.flatMap((p, i) => {
+        const hasFreq = people.some(x => x.frequent);
+        const label = !hasFreq ? '' : i === 0 ? '<li class="psection">★ Frequent</li>'
+          : (!p.frequent && people[i - 1].frequent) ? '<li class="psection">Everyone else</li>' : '';
+        return [label + `
         <li class="person ${filterPerson === p.id ? 'active' : ''}" data-filter="${p.id}">
           <div class="avatar" style="background:${colorFor(p.id)}">${esc(initials(p.name))}</div>
-          <div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="meta">${esc(p.relation || '')}${p.relation ? ' · ' : ''}${countFor(p.id)}</div></div>
+          <div class="pinfo"><div class="pname">${p.frequent ? '<span class="star">★</span> ' : ''}${esc(p.name)}</div><div class="meta">${esc(p.relation || '')}${p.relation ? ' · ' : ''}${countFor(p.id)}</div></div>
           <div class="pactions">
+            <button class="icon" data-freq="${p.id}" title="${p.frequent ? 'Remove from Frequent' : 'Mark as Frequent'}">${p.frequent ? '★' : '☆'}</button>
             <button class="icon" data-export="${p.id}" title="Export ${esc(p.name)}'s log">⇩</button>
             <button class="icon" data-editp="${p.id}" title="Edit">✎</button>
           </div>
-        </li>`)
+        </li>`];
+      })
     ];
     $('#peopleList').innerHTML = items.join('');
   }
@@ -450,9 +465,9 @@
     $('#eTitle').value = editingEntry ? editingEntry.title : '';
     $('#eBody').value = editingEntry ? editingEntry.body : '';
     const sel = editingEntry ? editingEntry.people : (filterPerson && filterPerson !== 'me' ? [filterPerson] : []);
-    const people = [...db.people].sort((a, b) => a.name.localeCompare(b.name));
+    const people = sortedPeople();
     $('#ePeople').innerHTML = people.length
-      ? people.map(p => `<label><input type="checkbox" value="${p.id}" ${sel.includes(p.id) ? 'checked' : ''}>${esc(p.name)}</label>`).join('')
+      ? people.map((p, i) => (people.some(x => x.frequent) && !p.frequent && i > 0 && people[i - 1].frequent ? '<span class="pick-break"></span>' : '') + `<label><input type="checkbox" value="${p.id}" ${sel.includes(p.id) ? 'checked' : ''}>${p.frequent ? '★ ' : ''}${esc(p.name)}</label>`).join('')
       : `<span class="hint">No people yet — add them from the People panel.</span>`;
     $('#eDelete').style.display = editingEntry ? '' : 'none';
     $('#eStamp').textContent = editingEntry
@@ -538,6 +553,7 @@
     $('#pName').value = editingPerson?.name || '';
     $('#pRel').value = editingPerson?.relation || '';
     $('#pNotes').value = editingPerson?.notes || '';
+    $('#pFreq').checked = !!editingPerson?.frequent;
     $('#pDelete').style.display = editingPerson ? '' : 'none';
     $('#personDlg').showModal();
     setTimeout(() => $('#pName').focus(), 50);
@@ -546,7 +562,7 @@
     ev.preventDefault();
     const name = $('#pName').value.trim();
     if (!name) return;
-    const data = { name, relation: $('#pRel').value.trim(), notes: $('#pNotes').value.trim() };
+    const data = { name, relation: $('#pRel').value.trim(), notes: $('#pNotes').value.trim(), frequent: $('#pFreq').checked };
     if (editingPerson) Object.assign(editingPerson, data);
     else db.people.push({ id: uid(), createdAt: new Date().toISOString(), ...data });
     save(); $('#personDlg').close(); render(); toast(editingPerson ? 'Updated' : 'Added ' + name);
@@ -636,9 +652,10 @@
   $('#sort').addEventListener('change', renderEntries);
 
   document.addEventListener('click', ev => {
-    const t = ev.target.closest('[data-export],[data-editp],[data-edit],[data-toggle],[data-clear],[data-close],[data-filter]');
+    const t = ev.target.closest('[data-freq],[data-export],[data-editp],[data-edit],[data-toggle],[data-clear],[data-close],[data-filter]');
     if (!t) return;
     if (t.dataset.export) { ev.stopPropagation(); openExport(t.dataset.export); return; }
+    if (t.dataset.freq) { ev.stopPropagation(); const p = personById(t.dataset.freq); p.frequent = !p.frequent; save(); render(); toast(p.frequent ? p.name + ' marked Frequent' : p.name + ' removed from Frequent'); return; }
     if (t.dataset.editp) { ev.stopPropagation(); openPerson(t.dataset.editp); return; }
     if (t.dataset.edit) return openEntry(t.dataset.edit);
     if (t.dataset.toggle) { const id = t.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); return renderEntries(); }
