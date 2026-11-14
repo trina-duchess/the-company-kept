@@ -693,6 +693,13 @@
 
   // ---------- dictation ----------
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  const KBD = 'companyKept.kbdDictation';
+  const useKeyboardMic = () => { try { return localStorage.getItem(KBD) === '1'; } catch (e) { return false; } };
+  function keyboardMic(ctx) {
+    const ta = $(ctx.ta); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+    $(ctx.hint).textContent = 'Tap the 🎤 microphone on your keyboard (bottom right) and talk. Tap it again when done.';
+  }
   const micDialog = { ta: '#eBody', btn: '#micBtn', label: '#micLabel', hint: '#micHint', idle: 'Talk' };
   let rec = null, listening = null;
   function setMic(ctx, on) {
@@ -701,6 +708,7 @@
     $(ctx.label).textContent = on ? 'Stop' : ctx.idle;
   }
   function startDictation(ctx) {
+    if (IS_IOS && useKeyboardMic()) return keyboardMic(ctx);
     if (!SR) {
       $(ctx.hint).textContent = "This browser doesn't support built-in dictation. Tip: tap the microphone on your phone's keyboard instead.";
       return;
@@ -721,7 +729,7 @@
       ta.value = base + tidy(finalText + interim);
       ta.scrollTop = ta.scrollHeight;
     };
-    const altTip = /Windows/.test(navigator.userAgent) ? ' Tip: click in the box and press Windows + H to use Windows voice typing instead.'
+    const altTip = IS_IOS ? ' Tip: tap the microphone on your keyboard instead.' : /Windows/.test(navigator.userAgent) ? ' Tip: click in the box and press Windows + H to use Windows voice typing instead.'
       : /Mac/.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent) ? ' Tip: click in the box and press the Fn (🌐) key twice to use Mac dictation instead.'
       : ' Tip: tap the microphone on your keyboard instead.';
     let heard = false;
@@ -732,12 +740,16 @@
     rec.onerror = e => {
       clearTimeout(watch);
       const msg = { 'not-allowed': 'Microphone permission was blocked. Allow it in your browser settings.' + altTip,
-                    'service-not-allowed': (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone dictation is turned off or blocked for this page — see Settings → General → Keyboard → Enable Dictation, and allow the microphone for this site.' : 'This browser blocks its speech service.') + altTip,
+                    'service-not-allowed': (IS_IOS ? 'iPhone dictation is turned off or blocked for this page — see Settings → General → Keyboard → Enable Dictation, and allow the microphone for this site.' : 'This browser blocks its speech service.') + altTip,
                     'network': "This browser can't reach its speech service — use Chrome, Edge or Safari." + altTip,
                     'audio-capture': 'No microphone found — check that one is connected and selected.' + altTip,
                     'no-speech': 'Didn\'t hear anything — try again, closer to the mic.' }[e.error] || 'Dictation stopped (' + e.error + ').' + altTip;
       $(ctx.hint).textContent = msg;
       if (e.error !== 'no-speech') { try { rec.abort(); } catch (x) {} setMic(ctx, false); }
+      if (IS_IOS && (e.error === 'service-not-allowed' || e.error === 'not-allowed')) {
+        try { localStorage.setItem(KBD, '1'); } catch (x) {}
+        setTimeout(() => keyboardMic(ctx), 50);
+      }
     };
     rec.onend = () => { ta.value = base + tidy(finalText); setMic(ctx, false); rec = null; ta.dispatchEvent(new Event('input')); if ($(ctx.hint).textContent.startsWith('Listening')) $(ctx.hint).textContent = ''; };
     try { rec.start(); setMic(ctx, true); $(ctx.hint).textContent = 'Listening… say "new paragraph" to start a new paragraph. Tap Stop when done.'; }
