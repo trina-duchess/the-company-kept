@@ -215,6 +215,8 @@
   .recent li{background:var(--canvas-2);border:1.5px solid var(--line);border-left:6px solid var(--oxblood);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .recent li:hover{background:#fff}
   .recent b{color:var(--oxblood)}
+  .sdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--suit-light);vertical-align:middle}
+  .sdot.ok{background:#8fd18f}.sdot.busy{background:var(--ochre)}.sdot.err{background:#ff8a7a}
   .toast{
     position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
     background:var(--ink);color:var(--canvas-2);padding:10px 18px;border-radius:999px;
@@ -257,6 +259,7 @@
       <p class="tag">Moments lived, and the people who were there.</p>
     </div>
     <div class="hdr-actions">
+      <button class="ghost small" id="syncBtn" title="Sync between devices"><span id="syncDot" class="sdot"></span> <span id="syncLabel">Sync</span></button>
       <button class="ghost small" id="backupBtn" title="Download a full backup">Backup</button>
       <button class="ghost small" id="restoreBtn" title="Restore from a backup file">Restore</button>
       <input type="file" id="restoreFile" accept=".json,application/json" hidden>
@@ -396,6 +399,30 @@
   </div>
 </dialog>
 
+<!-- Sync dialog -->
+<dialog id="syncDlg">
+  <form method="dialog" id="syncForm">
+    <div class="dlg-head"><span>Sync between devices</span><button type="button" class="icon" data-close>✕</button></div>
+    <div class="dlg-body">
+      <p style="margin:0">Your log is saved to <strong>data.json</strong> in a private GitHub repo, so your phone and laptop share one copy. Changes sync automatically when you save and whenever you open the app.</p>
+      <div class="row">
+        <label>GitHub owner <input type="text" id="sOwner" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label>Private data repo <input type="text" id="sRepo" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      </div>
+      <label>Access token
+        <input type="password" id="sToken" autocomplete="off" placeholder="github_pat_…">
+        <span class="hint">A fine-grained token with <b>Contents: Read and write</b> on the data repo only. It's stored on this device only.</span>
+      </label>
+      <div class="stamp" id="syncStatus"></div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="danger" id="sDisconnect" style="margin-right:auto">Disconnect</button>
+      <button type="button" data-close>Close</button>
+      <button type="submit" class="primary">Save &amp; sync now</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -411,9 +438,89 @@
     try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch (e) {}
     return { version: 1, people: [], entries: [] };
   }
-  function save() {
+  function save(opts = {}) {
     try { localStorage.setItem(KEY, JSON.stringify(db)); }
     catch (e) { toast('Could not save — storage unavailable'); }
+    if (!opts.noSync) schedulePush();
+  }
+  const nowISO = () => new Date().toISOString();
+  function tombstone(id) { db.deleted = db.deleted || {}; db.deleted[id] = nowISO(); }
+
+  // ---------- sync (GitHub private repo) ----------
+  const SYNC = 'companyKept.sync';
+  let syncCfg = (() => { try { return JSON.parse(localStorage.getItem(SYNC)) || {}; } catch (e) { return {}; } })();
+  const syncOn = () => !!(syncCfg.owner && syncCfg.repo && syncCfg.token);
+  let syncing = false, again = false, pushTimer = null;
+  function setSync(state, text) {
+    $('#syncDot').className = 'sdot ' + (state || '');
+    $('#syncLabel').textContent = text;
+    const st = document.getElementById('syncStatus'); if (st) st.textContent = syncOn() ? text : 'Not connected.';
+  }
+  const b64enc = str => { const bytes = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+  const b64dec = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
+  const ghUrl = () => `https://api.github.com/repos/${encodeURIComponent(syncCfg.owner)}/${encodeURIComponent(syncCfg.repo)}/contents/data.json`;
+  const ghHeaders = () => ({ Authorization: 'Bearer ' + syncCfg.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' });
+  async function ghGet() {
+    const r = await fetch(ghUrl() + '?t=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' });
+    if (r.status === 404) {
+      const repo = await fetch(`https://api.github.com/repos/${encodeURIComponent(syncCfg.owner)}/${encodeURIComponent(syncCfg.repo)}`, { headers: ghHeaders() });
+      if (repo.status === 404) throw new Error("Can't find that repo — check the name and that the token can access it.");
+      return null;
+    }
+    if (r.status === 401) throw new Error('Token was rejected — it may be expired.');
+    if (!r.ok) throw new Error('GitHub error ' + r.status);
+    const j = await r.json();
+    return { data: JSON.parse(b64dec(j.content)), sha: j.sha };
+  }
+  async function ghPut(data, sha) {
+    const body = { message: 'Sync from ' + (/iPhone|iPad|Android/.test(navigator.userAgent) ? 'phone' : 'computer'), content: b64enc(JSON.stringify(data, null, 1)) };
+    if (sha) body.sha = sha;
+    const r = await fetch(ghUrl(), { method: 'PUT', headers: { ...ghHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (r.status === 409 || r.status === 422) return { conflict: true };
+    if (r.status === 401) throw new Error('Token was rejected — it may be expired.');
+    if (r.status === 403 || r.status === 404) throw new Error("Token can't write to that repo — it needs Contents: Read and write.");
+    if (!r.ok) throw new Error('GitHub error ' + r.status);
+    return { ok: true };
+  }
+  function mergeDb(a, b) {
+    const deleted = { ...(a.deleted || {}) };
+    for (const [k, v] of Object.entries(b.deleted || {})) if (!deleted[k] || v > deleted[k]) deleted[k] = v;
+    const mergeList = (x = [], y = []) => {
+      const m = new Map();
+      for (const it of [...x, ...y]) { const cur = m.get(it.id); if (!cur || (it.updatedAt || it.createdAt || '') > (cur.updatedAt || cur.createdAt || '')) m.set(it.id, it); }
+      return [...m.values()].filter(it => !deleted[it.id]).sort((p, q) => p.id.localeCompare(q.id));
+    };
+    const people = mergeList(a.people, b.people);
+    const ids = new Set(people.map(p => p.id));
+    const entries = mergeList(a.entries, b.entries).map(e => ({ ...e, people: e.people.filter(id => ids.has(id)) }));
+    return { version: 1, people, entries, deleted };
+  }
+  function schedulePush() { if (!syncOn()) return; clearTimeout(pushTimer); setSync('busy', 'Saving…'); pushTimer = setTimeout(syncNow, 1200); }
+  async function syncNow() {
+    if (!syncOn()) return;
+    if (syncing) { again = true; return; }
+    syncing = true; setSync('busy', 'Syncing…');
+    try {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const remote = await ghGet();
+        const merged = remote ? mergeDb(db, remote.data) : mergeDb(db, {});
+        const before = JSON.stringify(db);
+        db = merged; save({ noSync: true });
+        if (JSON.stringify(merged) !== before) { [...logSel].forEach(id => personById(id) || logSel.delete(id)); render(); }
+        if (remote && JSON.stringify(mergeDb(remote.data, {})) === JSON.stringify(merged)) break;
+        const res = await ghPut(merged, remote?.sha);
+        if (res.ok) break;
+        if (attempt === 3) throw new Error('Kept colliding with another device — try again.');
+      }
+      syncCfg.last = nowISO(); localStorage.setItem(SYNC, JSON.stringify(syncCfg));
+      setSync('ok', 'Synced ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+    } catch (e) {
+      setSync('err', 'Sync failed'); const st = document.getElementById('syncStatus'); if (st) st.textContent = e.message || String(e);
+      console.warn(e);
+    } finally {
+      syncing = false;
+      if (again) { again = false; syncNow(); }
+    }
   }
 
   // ---------- state ----------
@@ -624,6 +731,7 @@
   $('#eDelete').addEventListener('click', () => {
     if (!editingEntry) return;
     if (!confirm('Delete this entry? This cannot be undone.')) return;
+    tombstone(editingEntry.id);
     db.entries = db.entries.filter(e => e.id !== editingEntry.id);
     stopDictation(); save(); $('#entryDlg').close(); render(); toast('Entry deleted');
   });
@@ -692,7 +800,7 @@
     ev.preventDefault();
     const name = $('#pName').value.trim();
     if (!name) return;
-    const data = { name, relation: $('#pRel').value.trim(), notes: $('#pNotes').value.trim(), frequent: $('#pFreq').checked };
+    const data = { name, relation: $('#pRel').value.trim(), notes: $('#pNotes').value.trim(), frequent: $('#pFreq').checked, updatedAt: nowISO() };
     if (editingPerson) Object.assign(editingPerson, data);
     else { const np = { id: uid(), createdAt: new Date().toISOString(), ...data }; db.people.push(np); if (addingFromLog) { logSel.add(np.id); saveDraft(); } }
     addingFromLog = false;
@@ -704,8 +812,9 @@
     const msg = `Delete ${editingPerson.name}?` + (n ? `\n\nTheir name will be removed from ${n} entr${n === 1 ? 'y' : 'ies'}. The entries themselves stay.` : '');
     if (!confirm(msg)) return;
     const id = editingPerson.id;
+    tombstone(id);
     db.people = db.people.filter(p => p.id !== id);
-    db.entries.forEach(e => e.people = e.people.filter(x => x !== id));
+    db.entries.forEach(e => { if (e.people.includes(id)) { e.people = e.people.filter(x => x !== id); e.updatedAt = nowISO(); } });
     logSel.delete(id);
     if (filterPerson === id) filterPerson = null;
     save(); $('#personDlg').close(); render(); toast('Person deleted');
@@ -772,7 +881,8 @@
       const data = JSON.parse(await f.text());
       if (!Array.isArray(data.people) || !Array.isArray(data.entries)) throw 0;
       if (!confirm(`Replace current data with this backup?\n\n${data.people.length} people, ${data.entries.length} entries.`)) return;
-      db = data; filterPerson = null; save(); render(); toast('Restored');
+      db = mergeDb(data, {}); const t = nowISO(); db.people.forEach(p => p.updatedAt = t); db.entries.forEach(e => e.updatedAt = t);
+      filterPerson = null; save(); render(); toast('Restored');
     } catch (e) { toast('That file is not a valid backup'); }
     ev.target.value = '';
   });
@@ -788,7 +898,7 @@
     if (t.dataset.export) { ev.stopPropagation(); openExport(t.dataset.export); return; }
     if (t.dataset.pick) { const id = t.dataset.pick; logSel.has(id) ? logSel.delete(id) : logSel.add(id); saveDraft(); return renderLogWho(); }
     if ('addlog' in t.dataset) { addingFromLog = true; return openPerson(); }
-    if (t.dataset.freq) { ev.stopPropagation(); const p = personById(t.dataset.freq); p.frequent = !p.frequent; save(); render(); toast(p.frequent ? p.name + ' marked Frequent' : p.name + ' removed from Frequent'); return; }
+    if (t.dataset.freq) { ev.stopPropagation(); const p = personById(t.dataset.freq); p.frequent = !p.frequent; p.updatedAt = nowISO(); save(); render(); toast(p.frequent ? p.name + ' marked Frequent' : p.name + ' removed from Frequent'); return; }
     if (t.dataset.editp) { ev.stopPropagation(); openPerson(t.dataset.editp); return; }
     if (t.dataset.edit) return openEntry(t.dataset.edit);
     if (t.dataset.toggle) { const id = t.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); return renderEntries(); }
@@ -799,8 +909,32 @@
   $('#entryDlg').addEventListener('close', stopDictation);
   $('#personDlg').addEventListener('close', () => { addingFromLog = false; });
 
+  $('#syncBtn').addEventListener('click', () => {
+    $('#sOwner').value = syncCfg.owner || 'trina-duchess';
+    $('#sRepo').value = syncCfg.repo || 'the-company-kept-data';
+    $('#sToken').value = syncCfg.token || '';
+    $('#sDisconnect').style.display = syncOn() ? '' : 'none';
+    $('#syncStatus').textContent = syncOn() ? $('#syncLabel').textContent : 'Not connected.';
+    $('#syncDlg').showModal();
+  });
+  $('#syncForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    syncCfg = { owner: $('#sOwner').value.trim(), repo: $('#sRepo').value.trim(), token: $('#sToken').value.trim() };
+    if (!syncOn()) { $('#syncStatus').textContent = 'Fill in all three fields.'; return; }
+    localStorage.setItem(SYNC, JSON.stringify(syncCfg));
+    $('#sDisconnect').style.display = '';
+    await syncNow();
+    if ($('#syncDot').classList.contains('ok')) { $('#syncDlg').close(); toast('Synced ✓'); }
+  });
+  $('#sDisconnect').addEventListener('click', () => {
+    if (!confirm('Stop syncing on this device? Your log stays here, and the copy on GitHub is untouched.')) return;
+    syncCfg = {}; localStorage.removeItem(SYNC); setSync('', 'Sync'); $('#syncDlg').close();
+  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
+
   loadDraft();
   render();
+  if (syncOn()) syncNow(); else setSync('', 'Sync');
 })();
 </script>
 </body>
