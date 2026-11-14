@@ -721,8 +721,21 @@
       ta.value = base + tidy(finalText + interim);
       ta.scrollTop = ta.scrollHeight;
     };
+    const altTip = /Windows/.test(navigator.userAgent) ? ' Tip: click in the box and press Windows + H to use Windows voice typing instead.'
+      : /Mac/.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent) ? ' Tip: click in the box and press the Fn (🌐) key twice to use Mac dictation instead.'
+      : ' Tip: tap the microphone on your keyboard instead.';
+    let heard = false;
+    rec.onresult = (orig => e => { heard = true; clearTimeout(watch); orig(e); })(rec.onresult);
+    const watch = setTimeout(() => {
+      if (!heard && rec) $(ctx.hint).textContent = "Not picking anything up. This browser may not support dictation — Chrome, Edge and Safari do." + altTip;
+    }, 7000);
     rec.onerror = e => {
-      const msg = { 'not-allowed': 'Microphone permission was blocked. Allow it in your browser settings.', 'no-speech': 'Didn\'t hear anything — try again.' }[e.error] || 'Dictation stopped (' + e.error + ').';
+      clearTimeout(watch);
+      const msg = { 'not-allowed': 'Microphone permission was blocked. Allow it in your browser settings.' + altTip,
+                    'service-not-allowed': 'This browser blocks its speech service.' + altTip,
+                    'network': "This browser can't reach its speech service — use Chrome, Edge or Safari." + altTip,
+                    'audio-capture': 'No microphone found — check that one is connected and selected.' + altTip,
+                    'no-speech': 'Didn\'t hear anything — try again, closer to the mic.' }[e.error] || 'Dictation stopped (' + e.error + ').' + altTip;
       $(ctx.hint).textContent = msg;
     };
     rec.onend = () => { ta.value = base + tidy(finalText); setMic(ctx, false); rec = null; ta.dispatchEvent(new Event('input')); if ($(ctx.hint).textContent.startsWith('Listening')) $(ctx.hint).textContent = ''; };
