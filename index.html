@@ -732,11 +732,12 @@
     rec.onerror = e => {
       clearTimeout(watch);
       const msg = { 'not-allowed': 'Microphone permission was blocked. Allow it in your browser settings.' + altTip,
-                    'service-not-allowed': 'This browser blocks its speech service.' + altTip,
+                    'service-not-allowed': (/iPhone|iPad/.test(navigator.userAgent) ? 'iPhone dictation is turned off or blocked for this page — see Settings → General → Keyboard → Enable Dictation, and allow the microphone for this site.' : 'This browser blocks its speech service.') + altTip,
                     'network': "This browser can't reach its speech service — use Chrome, Edge or Safari." + altTip,
                     'audio-capture': 'No microphone found — check that one is connected and selected.' + altTip,
                     'no-speech': 'Didn\'t hear anything — try again, closer to the mic.' }[e.error] || 'Dictation stopped (' + e.error + ').' + altTip;
       $(ctx.hint).textContent = msg;
+      if (e.error !== 'no-speech') { try { rec.abort(); } catch (x) {} setMic(ctx, false); }
     };
     rec.onend = () => { ta.value = base + tidy(finalText); setMic(ctx, false); rec = null; ta.dispatchEvent(new Event('input')); if ($(ctx.hint).textContent.startsWith('Listening')) $(ctx.hint).textContent = ''; };
     try { rec.start(); setMic(ctx, true); $(ctx.hint).textContent = 'Listening… say "new paragraph" to start a new paragraph. Tap Stop when done.'; }
