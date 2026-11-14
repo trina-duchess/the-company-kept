@@ -197,12 +197,15 @@
   .lp-label{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:1.15rem;font-weight:700;color:var(--oxblood);margin-bottom:8px}
   .lp-label .hint{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:.8rem;font-weight:400;margin-left:6px}
   .who{display:flex;flex-wrap:wrap;gap:8px}
-  .who button{box-shadow:none;border-width:2px;padding:10px 16px;font-size:1rem;background:var(--canvas-2)}
+  .who button{box-shadow:0 2px 0 var(--line);border-width:2px;padding:12px 18px;font-size:1.05rem;background:var(--canvas-2)}
+  .who button:hover{background:#fff}
+  .who button.me{background:var(--ochre)}
   .who button.on{background:var(--cobalt);color:#fff}
   .who button.add{border-style:dashed;background:transparent;color:var(--oxblood)}
   .who .break{flex-basis:100%;height:0}
   .compose{display:flex;gap:10px;align-items:stretch}
-  .compose textarea{min-height:170px;font-size:1.05rem}
+  .compose textarea{min-height:180px;font-size:1.05rem}
+  #entryDlg{width:min(760px,96vw)}
   .bigmic{flex:0 0 92px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:var(--ochre);color:var(--ink);font-size:1rem}
   .bigmic.on{background:var(--rust);color:#fff;animation:pulse 1.2s infinite}
   .lp-row{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:end}
@@ -272,34 +275,10 @@
   </nav>
 
   <section id="logView" class="panel logpanel">
-    <div class="lp-step">
-      <div class="lp-label">Who was there? <span class="hint">Tap one or more — leave blank if it was just you</span></div>
+    <div>
+      <div class="lp-label">Who were you with? <span class="hint">Tap a person to log a moment</span></div>
       <div class="who" id="logWho"></div>
     </div>
-    <div class="lp-step">
-      <div class="lp-label">What happened?</div>
-      <div class="compose">
-        <textarea id="lBody" placeholder="Tap Talk and just say it — or type…"></textarea>
-        <button type="button" class="bigmic" id="lMic" aria-label="Dictate">
-          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
-          <span id="lMicLabel">Talk</span>
-        </button>
-      </div>
-      <div class="hint" id="lMicHint"></div>
-    </div>
-    <div class="lp-row">
-      <label>When
-        <div class="datebtns">
-          <input type="date" id="lDate">
-          <button type="button" class="small" data-day="0">Today</button>
-          <button type="button" class="small" data-day="1">Yesterday</button>
-        </div>
-      </label>
-      <label>Title <span class="hint" style="display:inline">(optional)</span>
-        <input type="text" id="lTitle" placeholder="e.g. Coffee on the coast">
-      </label>
-    </div>
-    <button type="button" class="primary savebig" id="lSave">Save moment</button>
     <div id="lRecent"></div>
   </section>
 
@@ -328,10 +307,21 @@
   <form method="dialog" id="entryForm">
     <div class="dlg-head"><span id="entryDlgTitle">New entry</span><button type="button" class="icon" data-close>✕</button></div>
     <div class="dlg-body">
-      <div class="row">
-        <label>When it happened
-          <input type="date" id="eDate" required>
-          <span class="hint">You can change this any time.</span>
+      <div class="compose">
+        <textarea id="eBody" placeholder="Tap Talk and just say it — or type…"></textarea>
+        <button type="button" class="bigmic" id="micBtn" aria-label="Dictate">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="22"/></svg>
+          <span id="micLabel">Talk</span>
+        </button>
+      </div>
+      <span class="hint" id="micHint" style="margin-top:-6px"></span>
+      <div class="lp-row">
+        <label>When
+          <div class="datebtns">
+            <input type="date" id="eDate" required>
+            <button type="button" class="small" data-day="0">Today</button>
+            <button type="button" class="small" data-day="1">Yesterday</button>
+          </div>
         </label>
         <label>Title <span class="hint" style="display:inline">(optional)</span>
           <input type="text" id="eTitle" placeholder="e.g. Coffee on the coast">
@@ -339,22 +329,14 @@
       </div>
       <label>Who was there
         <div class="pick" id="ePeople"></div>
-        <span class="hint">Leave all unchecked for a moment that's just yours.</span>
-      </label>
-      <label>
-        <div class="body-head">
-          <span>What happened</span>
-          <button type="button" class="small mic" id="micBtn"><span class="dot"></span><span id="micLabel">Dictate</span></button>
-        </div>
-        <textarea id="eBody" placeholder="Type or tap Dictate and talk…"></textarea>
-        <span class="hint" id="micHint"></span>
+        <span class="hint">Add anyone else who was there. Leave all unchecked for a moment that's just yours.</span>
       </label>
       <div class="stamp" id="eStamp"></div>
     </div>
     <div class="dlg-foot">
       <button type="button" class="danger" id="eDelete" style="margin-right:auto">Delete</button>
       <button type="button" data-close>Cancel</button>
-      <button type="submit" class="primary">Save</button>
+      <button type="submit" class="primary">Save moment</button>
     </div>
   </form>
 </dialog>
@@ -506,7 +488,7 @@
         const merged = remote ? mergeDb(db, remote.data) : mergeDb(db, {});
         const before = JSON.stringify(db);
         db = merged; save({ noSync: true });
-        if (JSON.stringify(merged) !== before) { [...logSel].forEach(id => personById(id) || logSel.delete(id)); render(); }
+        if (JSON.stringify(merged) !== before) render();
         if (remote && JSON.stringify(mergeDb(remote.data, {})) === JSON.stringify(merged)) break;
         const res = await ghPut(merged, remote?.sha);
         if (res.ok) break;
@@ -631,8 +613,6 @@
   }
 
   // ---------- log view ----------
-  const DRAFT = 'companyKept.draft';
-  const logSel = new Set();
   let addingFromLog = false;
   const dayISO = back => { const d = new Date(); d.setDate(d.getDate() - back); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
 
@@ -641,8 +621,8 @@
     const hasFreq = people.some(p => p.frequent);
     $('#logWho').innerHTML = people.map((p, i) =>
       (hasFreq && !p.frequent && i > 0 && people[i - 1].frequent ? '<span class="break"></span>' : '') +
-      `<button type="button" data-pick="${p.id}" class="${logSel.has(p.id) ? 'on' : ''}">${p.frequent ? '★ ' : ''}${esc(p.name)}</button>`
-    ).join('') + `<button type="button" class="add" data-addlog>+ New person</button>`;
+      `<button type="button" data-pick="${p.id}">${p.frequent ? '★ ' : ''}${esc(p.name)}</button>`
+    ).join('') + `<span class="break"></span><button type="button" class="me" data-pick="me">Just me</button><button type="button" class="add" data-addlog>+ New person</button>`;
   }
   function renderRecent() {
     const recent = [...db.entries].sort((a, b) => b.loggedAt.localeCompare(a.loggedAt)).slice(0, 3);
@@ -651,35 +631,7 @@
       return `<li data-edit="${e.id}"><b>${esc(fmtDate(e.date).replace(/^\w+, /, ''))}</b> · ${esc(who)} — ${esc(e.title || e.body.slice(0, 90))}</li>`;
     }).join('')}</ul></div>` : '';
   }
-  function saveDraft() {
-    try { localStorage.setItem(DRAFT, JSON.stringify({ body: $('#lBody').value, title: $('#lTitle').value, date: $('#lDate').value, people: [...logSel] })); } catch (e) {}
-  }
-  function loadDraft() {
-    let d = null; try { d = JSON.parse(localStorage.getItem(DRAFT)); } catch (e) {}
-    $('#lDate').value = todayISO();
-    if (!d) return;
-    $('#lBody').value = d.body || ''; $('#lTitle').value = d.title || '';
-    if (d.date) $('#lDate').value = d.date;
-    (d.people || []).forEach(id => personById(id) && logSel.add(id));
-  }
-  function saveLog() {
-    stopDictation();
-    setTimeout(() => {
-      const body = $('#lBody').value.trim(), title = $('#lTitle').value.trim();
-      if (!body && !title) { toast('Say or type what happened first'); $('#lBody').focus(); return; }
-      const now = new Date().toISOString();
-      db.entries.push({ id: uid(), date: $('#lDate').value || todayISO(), title, body, people: [...logSel], loggedAt: now, updatedAt: now });
-      save();
-      $('#lBody').value = ''; $('#lTitle').value = ''; $('#lDate').value = todayISO(); $('#lMicHint').textContent = '';
-      logSel.clear();
-      try { localStorage.removeItem(DRAFT); } catch (e) {}
-      render(); toast('Moment saved ✓');
-    }, rec ? 350 : 0);
-  }
-  $('#lSave').addEventListener('click', saveLog);
-  ['#lBody', '#lTitle', '#lDate'].forEach(s => $(s).addEventListener('input', saveDraft));
-  $('#lBody').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveLog(); });
-  document.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => { $('#lDate').value = dayISO(+b.dataset.day); saveDraft(); }));
+  document.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => { $('#eDate').value = dayISO(+b.dataset.day); }));
 
   function showView(v) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
@@ -691,25 +643,28 @@
   function render() { renderPeople(); renderEntries(); renderLogWho(); renderRecent(); }
 
   // ---------- entry dialog ----------
-  function openEntry(id) {
+  function openEntry(id, preset) {
     stopDictation();
     editingEntry = id ? db.entries.find(e => e.id === id) : null;
-    $('#entryDlgTitle').textContent = editingEntry ? 'Edit entry' : 'New entry';
+    const pre = preset || [];
+    $('#entryDlgTitle').textContent = editingEntry ? 'Edit moment'
+      : pre.length ? 'A moment with ' + pre.map(x => personById(x)?.name).join(', ') : 'A moment of my own';
     $('#eDate').value = editingEntry ? editingEntry.date : todayISO();
     $('#eTitle').value = editingEntry ? editingEntry.title : '';
     $('#eBody').value = editingEntry ? editingEntry.body : '';
-    const sel = editingEntry ? editingEntry.people : (filterPerson && filterPerson !== 'me' ? [filterPerson] : []);
+    const sel = editingEntry ? editingEntry.people : pre;
     const people = sortedPeople();
     $('#ePeople').innerHTML = people.length
       ? people.map((p, i) => (people.some(x => x.frequent) && !p.frequent && i > 0 && people[i - 1].frequent ? '<span class="pick-break"></span>' : '') + `<label><input type="checkbox" value="${p.id}" ${sel.includes(p.id) ? 'checked' : ''}>${p.frequent ? '★ ' : ''}${esc(p.name)}</label>`).join('')
-      : `<span class="hint">No people yet — add them from the People panel.</span>`;
+      : `<span class="hint">No people yet.</span>`;
     $('#eDelete').style.display = editingEntry ? '' : 'none';
     $('#eStamp').textContent = editingEntry
       ? `Logged ${fmtStamp(editingEntry.loggedAt)}${editingEntry.updatedAt !== editingEntry.loggedAt ? ' · last edited ' + fmtStamp(editingEntry.updatedAt) : ''}`
       : `Log date will be recorded as now (${fmtStamp(new Date().toISOString())}).`;
     $('#micHint').textContent = '';
     $('#entryDlg').showModal();
-    if (!editingEntry) setTimeout(() => $('#eBody').focus(), 50);
+    $('#entryDlg').dataset.start = JSON.stringify([$('#eBody').value, $('#eTitle').value]);
+    setTimeout(() => { const t = $('#eBody'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }, 50);
   }
 
   $('#entryForm').addEventListener('submit', ev => {
@@ -738,8 +693,7 @@
 
   // ---------- dictation ----------
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const micDialog = { ta: '#eBody', btn: '#micBtn', label: '#micLabel', hint: '#micHint', idle: 'Dictate' };
-  const micLog = { ta: '#lBody', btn: '#lMic', label: '#lMicLabel', hint: '#lMicHint', idle: 'Talk' };
+  const micDialog = { ta: '#eBody', btn: '#micBtn', label: '#micLabel', hint: '#micHint', idle: 'Talk' };
   let rec = null, listening = null;
   function setMic(ctx, on) {
     listening = on ? ctx : null;
@@ -782,7 +736,6 @@
   }
   function stopDictation() { if (rec) { try { rec.stop(); } catch (e) {} } if (listening) setMic(listening, false); }
   $('#micBtn').addEventListener('click', () => listening ? stopDictation() : startDictation(micDialog));
-  $('#lMic').addEventListener('click', () => listening ? stopDictation() : startDictation(micLog));
 
   // ---------- person dialog ----------
   function openPerson(id) {
@@ -802,9 +755,12 @@
     if (!name) return;
     const data = { name, relation: $('#pRel').value.trim(), notes: $('#pNotes').value.trim(), frequent: $('#pFreq').checked, updatedAt: nowISO() };
     if (editingPerson) Object.assign(editingPerson, data);
-    else { const np = { id: uid(), createdAt: new Date().toISOString(), ...data }; db.people.push(np); if (addingFromLog) { logSel.add(np.id); saveDraft(); } }
+    let np = null;
+    if (!editingPerson) { np = { id: uid(), createdAt: new Date().toISOString(), ...data }; db.people.push(np); }
+    const thenLog = addingFromLog && np;
     addingFromLog = false;
     save(); $('#personDlg').close(); render(); toast(editingPerson ? 'Updated' : 'Added ' + name);
+    if (thenLog) openEntry(null, [np.id]);
   });
   $('#pDelete').addEventListener('click', () => {
     if (!editingPerson) return;
@@ -815,7 +771,6 @@
     tombstone(id);
     db.people = db.people.filter(p => p.id !== id);
     db.entries.forEach(e => { if (e.people.includes(id)) { e.people = e.people.filter(x => x !== id); e.updatedAt = nowISO(); } });
-    logSel.delete(id);
     if (filterPerson === id) filterPerson = null;
     save(); $('#personDlg').close(); render(); toast('Person deleted');
   });
@@ -896,17 +851,19 @@
     const t = ev.target.closest('[data-pick],[data-addlog],[data-freq],[data-export],[data-editp],[data-edit],[data-toggle],[data-clear],[data-close],[data-filter]');
     if (!t) return;
     if (t.dataset.export) { ev.stopPropagation(); openExport(t.dataset.export); return; }
-    if (t.dataset.pick) { const id = t.dataset.pick; logSel.has(id) ? logSel.delete(id) : logSel.add(id); saveDraft(); return renderLogWho(); }
+    if (t.dataset.pick) return openEntry(null, t.dataset.pick === 'me' ? [] : [t.dataset.pick]);
     if ('addlog' in t.dataset) { addingFromLog = true; return openPerson(); }
     if (t.dataset.freq) { ev.stopPropagation(); const p = personById(t.dataset.freq); p.frequent = !p.frequent; p.updatedAt = nowISO(); save(); render(); toast(p.frequent ? p.name + ' marked Frequent' : p.name + ' removed from Frequent'); return; }
     if (t.dataset.editp) { ev.stopPropagation(); openPerson(t.dataset.editp); return; }
     if (t.dataset.edit) return openEntry(t.dataset.edit);
     if (t.dataset.toggle) { const id = t.dataset.toggle; expanded.has(id) ? expanded.delete(id) : expanded.add(id); return renderEntries(); }
     if ('clear' in t.dataset) { filterPerson = null; return render(); }
-    if ('close' in t.dataset) { stopDictation(); t.closest('dialog').close(); return; }
+    if ('close' in t.dataset) { if (t.closest('#entryDlg') && entryDirty() && !confirm('Discard this moment?')) return; stopDictation(); t.closest('dialog').close(); return; }
     if ('filter' in t.dataset) { filterPerson = t.dataset.filter || null; return render(); }
   });
   $('#entryDlg').addEventListener('close', stopDictation);
+  const entryDirty = () => JSON.stringify([$('#eBody').value, $('#eTitle').value]) !== $('#entryDlg').dataset.start;
+  $('#entryDlg').addEventListener('cancel', ev => { if (entryDirty() && !confirm('Discard this moment?')) ev.preventDefault(); });
   $('#personDlg').addEventListener('close', () => { addingFromLog = false; });
 
   $('#syncBtn').addEventListener('click', () => {
@@ -932,7 +889,7 @@
   });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncNow(); });
 
-  loadDraft();
+  try { localStorage.removeItem('companyKept.draft'); } catch (e) {}
   render();
   if (syncOn()) syncNow(); else setSync('', 'Sync');
 })();
