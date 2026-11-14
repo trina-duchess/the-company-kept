@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#9a9d95"/>
+  <rect width="270" height="512" fill="#5c2521"/>
+  <!-- open book -->
+  <g stroke="#1d2033" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 150 C200 112 130 108 80 126 L80 384 C130 366 200 370 256 408 Z" fill="#f3efe5"/>
+    <path d="M256 150 C312 112 382 108 432 126 L432 384 C382 366 312 370 256 408 Z" fill="#e9e3d5"/>
+    <line x1="256" y1="150" x2="256" y2="408"/>
+  </g>
+  <!-- two figures on left page -->
+  <circle cx="148" cy="214" r="22" fill="#c98d58" stroke="#1d2033" stroke-width="8"/>
+  <path d="M112 300 C112 262 184 262 184 300" fill="#c98d58" stroke="#1d2033" stroke-width="8"/>
+  <circle cx="196" cy="226" r="18" fill="#7a4a2c" stroke="#1d2033" stroke-width="8"/>
+  <path d="M168 304 C168 274 224 274 224 304" fill="#7a4a2c" stroke="#1d2033" stroke-width="8"/>
+  <!-- lines on right page -->
+  <g stroke="#6f7772" stroke-width="10" stroke-linecap="round">
+    <line x1="292" y1="200" x2="396" y2="190"/>
+    <line x1="292" y1="240" x2="396" y2="232"/>
+    <line x1="292" y1="280" x2="380" y2="274"/>
+  </g>
+  <!-- cobalt ribbon -->
+  <path d="M330 118 L330 452 L356 428 L382 452 L382 108" fill="#2a48a6" stroke="#1d2033" stroke-width="10" stroke-linejoin="round"/>
+</svg>
