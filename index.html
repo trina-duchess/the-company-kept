@@ -708,7 +708,7 @@
     $(ctx.label).textContent = on ? 'Stop' : ctx.idle;
   }
   function startDictation(ctx) {
-    if (IS_IOS && useKeyboardMic()) return keyboardMic(ctx);
+    if (IS_IOS) return keyboardMic(ctx);
     if (!SR) {
       $(ctx.hint).textContent = "This browser doesn't support built-in dictation. Tip: tap the microphone on your phone's keyboard instead.";
       return;
